@@ -14,6 +14,8 @@ This is an initial prototype, not a general Android agent. It supports physical 
 
 The first version uses Android's UI hierarchy, not image perception. It offers only Calculator digits/multiply/clear/delete/equals, Battery-page navigation, opening Calculator/Settings, Home, Back, and Stop. It cannot execute arbitrary model-generated shell commands or text. It cannot send messages, modify accounts, or make purchases. App switching currently uses Android activity launch; it does not test Recents gestures, split screen, or process death.
 
+Known skills decompose a journey into immediate goals in code. For Calculator, the runner observes the expression, checks its prefix against the target, and asks Jev to select the control for the next symbol or correction. Jev chooses from the available controls; code does not substitute a scripted action when Jev is uncertain. This is guided skill execution, not unrestricted autonomous planning. Early real-device trials found that a broad calculation instruction could produce an extra digit; independent verification caught the error. Failed and blocked runs remain in the local history.
+
 ## Requirements
 
 - Python 3.10+ on Linux; no Python dependencies.
@@ -54,6 +56,8 @@ python3 run.py run --serial DEVICE_SERIAL --label 'Test phone' --journey multita
 Only one of this runner's processes can control a given device at a time. The lock does **not** coordinate unrelated ADB tools: reserve the phone in your lab before running. Do not run a journey while somebody else is interacting with the phone. The runner leaves the final app visible for inspection.
 
 Every run writes screenshots, observations, decisions, timings, verification checkpoints, a JSON summary, and an HTML report to `~/.local/share/phone-journeys/runs/`. Open the printed `index.html` locally. Artifacts remain private and are not committed. Screenshots may contain visible personal data. Only task-relevant Calculator fields and known Settings labels are sent to Jev; password nodes, serials, local paths, and other apps' UI contents are excluded from model state. Your chosen provider processes the submitted observations.
+
+Before a tap, the runner observes again and checks that the selected action is still available with the same bounds. If the UI changed during the API call, the run fails instead of tapping stale coordinates.
 
 Watch the device using your existing phone viewer while it runs. The runner uses ADB for observation/control; it does not restart the viewer or create another phone video encoder. UIAutomator dumps and screenshots take time: video-stream latency and agent-step latency are separate measurements.
 
