@@ -26,6 +26,11 @@ class JourneyTests(unittest.TestCase):
         self.assertIn('Press equals', goal('17×23'))
         self.assertIn('all clear', immediate_goal('calculate', self.calc(), 'Compute'))
 
+    def test_battery_goal_distinguishes_navigation_from_settings_changes(self):
+        goal = immediate_goal('battery', {'foreground_activity': 'com.android.settings/.Settings'}, 'Read only')
+        self.assertIn('clickable row containers', goal)
+        self.assertIn('does not change any setting', goal)
+
     def test_typed_answer_cannot_establish_expression_evidence(self):
         class Device:
             def tap(self, x, y): pass

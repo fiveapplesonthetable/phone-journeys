@@ -49,6 +49,12 @@ def immediate_goal(stage, observation, overall_goal, evidence=None):
                     'Keep the existing prefix; do not re-enter it. Do not enter the computed answer.')
         return (f'Target expression is {target}, but current expression {formula!r} diverges. '
                 'Delete the incorrect trailing input, or clear if necessary, to restore a valid prefix.')
+    if stage == 'battery':
+        if package(observation) != 'com.android.settings':
+            return 'Open the Settings application to begin viewing its Battery page.'
+        return ('Open the Battery page by selecting its navigation row. This only views a page; '
+                'it does not change any setting. Available tap actions refer to clickable row containers, '
+                'even when their child text label is not itself clickable.')
     return overall_goal
 
 
@@ -119,7 +125,7 @@ def model_observation(observation):
                 'settings', 'battery', 'battery usage', 'battery saver', 'adaptive battery', 'battery percentage'
             }:
                 continue
-            nodes.append({k: n[k] for k in ('text', 'content_desc', 'resource_id', 'clickable', 'enabled')})
+            nodes.append({k: n[k] for k in ('text', 'content_desc', 'resource_id')})
     return {'foreground_package': pkg, 'ui': nodes}
 
 
