@@ -29,6 +29,29 @@ def normalized(value):
     return re.sub(r'\s+', '', value).replace('*', '×').replace(',', '')
 
 
+def immediate_goal(stage, observation, overall_goal, evidence=None):
+    """Decompose a known skill into one decision; never select an action here."""
+    if stage == 'calculate':
+        if package(observation) not in CALCULATOR_PACKAGES:
+            return 'Open Calculator. Do not perform any other task yet.'
+        if not (evidence or {}).get('calculator_initialized'):
+            return 'Clear the previous Calculator expression/result using all clear before starting the new calculation.'
+        values = calculator_values(observation)
+        formula = normalized(values.get('formula', ''))
+        target = '17×23'
+        if formula == target:
+            return 'The exact requested expression 17×23 is entered. Press equals to submit it.'
+        if target.startswith(formula):
+            remaining = target[len(formula):]
+            symbol = 'multiply (×)' if remaining[0] == '×' else remaining[0]
+            return (f'Target expression is {target}. Already entered prefix is {formula!r}. '
+                    f'Remaining input is {remaining!r}. Enter only the next symbol: {symbol}. '
+                    'Keep the existing prefix; do not re-enter it. Do not enter the computed answer.')
+        return (f'Target expression is {target}, but current expression {formula!r} diverges. '
+                'Delete the incorrect trailing input, or clear if necessary, to restore a valid prefix.')
+    return overall_goal
+
+
 def stage_verified(stage, observation, evidence):
     pkg = package(observation)
     if stage in ('calculate', 'return'):
@@ -74,7 +97,8 @@ def available_actions(observation, stage):
             allowed = (n['class'] not in ('android.widget.Switch', 'android.widget.CheckBox')
                        and any(c['text'].strip().lower() == 'battery' for c in descendants))
         if allowed:
-            actions[f'tap_{i}'] = {'kind': 'tap', 'label': ('Open Battery page' if pkg == 'com.android.settings' else n['text'] or n['content_desc'] or rid),
+            label = 'Open Battery page' if pkg == 'com.android.settings' else 'Tap Calculator button: ' + (n['text'] or n['content_desc'] or rid)
+            actions[f'tap_{i}'] = {'kind': 'tap', 'label': label,
                                   'resource_id': rid, 'x': n['bounds']['center_x'], 'y': n['bounds']['center_y']}
     return actions
 
@@ -106,6 +130,8 @@ def execute(device, action, observation, evidence):
     elif kind in ('home', 'back'):
         getattr(device, kind)()
     elif kind == 'tap':
+        if package(observation) in CALCULATOR_PACKAGES and action.get('resource_id') == 'clr':
+            evidence['calculator_initialized'] = True
         if action.get('resource_id') == 'eq':
             values = calculator_values(observation)
             formula = next((v for k, v in values.items() if 'formula' in k), '')

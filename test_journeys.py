@@ -1,5 +1,5 @@
 import unittest
-from journeys import available_actions, execute, model_observation, stage_verified
+from journeys import available_actions, execute, immediate_goal, model_observation, stage_verified
 
 
 def node(rid, text='', clickable=True, cls='android.widget.Button'):
@@ -16,6 +16,15 @@ class JourneyTests(unittest.TestCase):
         observation = self.calc(node('com.google.android.calculator:id/result_preview', '391'))
         self.assertFalse(stage_verified('calculate', observation, {}))
         self.assertTrue(stage_verified('calculate', observation, {'equals_on_expression': True}))
+
+    def test_goal_uses_observed_prefix_and_handles_model_typo(self):
+        def goal(formula):
+            return immediate_goal('calculate', self.calc(node('com.google.android.calculator:id/formula', formula)), 'Compute',
+                                  {'calculator_initialized': True})
+        self.assertIn('next symbol: 2', goal('17×'))
+        self.assertIn('Delete the incorrect', goal('17×1'))
+        self.assertIn('Press equals', goal('17×23'))
+        self.assertIn('all clear', immediate_goal('calculate', self.calc(), 'Compute'))
 
     def test_typed_answer_cannot_establish_expression_evidence(self):
         class Device:

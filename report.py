@@ -179,6 +179,7 @@ def _step_markup(run_dir: Path, steps: list[dict]) -> str:
                   <div><span>Decision API</span><strong>{_duration(decision_ms)}</strong></div>
                 </div>
                 <p class="activity"><span>Foreground activity</span><code>{_text(foreground)}</code></p>
+                {('<p class="activity"><span>Immediate decision goal</span>' + _text(step['decision_goal']) + '</p>') if step.get('decision_goal') else ''}
                 {('<p class="verification"><span>Verification</span>' + _text(verification) + '</p>') if verification is not None else ''}
                 {node_content}
                 {('<details><summary>Full observation data</summary><pre>' + _json({k:v for k,v in observation.items() if k != "nodes" and k != "screenshot"}) + '</pre></details>') if any(k not in {"nodes", "screenshot", "foreground_activity"} for k in observation) else ''}
